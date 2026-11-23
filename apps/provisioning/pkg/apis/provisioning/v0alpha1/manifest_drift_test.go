@@ -35,8 +35,6 @@ var knownDifferences = map[string]string{
 	// CUE `_` becomes an object with arbitrary values; Go accepts any JSON value.
 	"Repository status.fieldErrors[].badValue": `type is "object" in CUE, "" in Go`,
 	"Connection status.fieldErrors[].badValue": `type is "object" in CUE, "" in Go`,
-	// A single-value disjunction becomes `const`, which kube-openapi has no field for.
-	"Repository status.deletion.state": "enum is [] in CUE, [Blocked] in Go",
 }
 
 func TestManifestMatchesGoTypes(t *testing.T) {
