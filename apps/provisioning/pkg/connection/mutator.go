@@ -17,6 +17,7 @@ import (
 	"github.com/grafana/grafana-app-sdk/resource"
 	provisioningadmission "github.com/grafana/grafana/apps/provisioning/pkg/apis/admission"
 	provisioning "github.com/grafana/grafana/apps/provisioning/pkg/apis/provisioning/v0alpha1"
+	"github.com/grafana/grafana/apps/provisioning/pkg/util/optional"
 )
 
 // AdmissionMutator handles mutation for Connection resources
@@ -33,10 +34,6 @@ func NewAdmissionMutator(factory Factory) *AdmissionMutator {
 
 // Mutate applies mutations to Connection resources
 func (m *AdmissionMutator) Mutate(ctx context.Context, a admission.Attributes, o admission.ObjectInterfaces) error {
-	if a.GetSubresource() != "" && !provisioningadmission.SpecAndSecureChanged(a) {
-		return nil // pure status patch: spec/secure untouched, nothing to (re)mutate
-	}
-
 	obj := a.GetObject()
 	if obj == nil {
 		return nil
@@ -45,6 +42,11 @@ func (m *AdmissionMutator) Mutate(ctx context.Context, a admission.Attributes, o
 	c, ok := obj.(*provisioning.Connection)
 	if !ok {
 		return fmt.Errorf("expected connection configuration, got %T", obj)
+	}
+	optional.ClearZero(&c.Status)
+
+	if a.GetSubresource() != "" && !provisioningadmission.SpecAndSecureChanged(a) {
+		return nil // pure status patch: spec/secure untouched, nothing to (re)mutate
 	}
 	c.NormalizeSecureValues()
 
@@ -59,7 +61,11 @@ func (m *AdmissionMutator) Mutate(ctx context.Context, a admission.Attributes, o
 		}
 	}
 
-	return m.factory.Mutate(ctx, c)
+	if err := m.factory.Mutate(ctx, c); err != nil {
+		return err
+	}
+	optional.ClearZero(&c.Spec)
+	return nil
 }
 
 // CopySecureValues copies secure values from old to new connection if they are zero in the new one.
