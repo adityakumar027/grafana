@@ -65,7 +65,7 @@ func TestManifestMatchesGoTypes(t *testing.T) {
 	})
 
 	manifest := loadManifest(t)
-	goDefs := GetOpenAPIDefinitions(refByName)
+	goDefs := GetOpenAPIDefinitionsWithSecureValues(refByName)
 
 	require.Equal(t, GROUP, manifest.Group)
 	require.Equal(t, VERSION, manifest.PreferredVersion)
