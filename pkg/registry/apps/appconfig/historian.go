@@ -5,6 +5,8 @@
 package appconfig
 
 import (
+	"errors"
+
 	authtypes "github.com/grafana/authlib/types"
 
 	historianAppConfig "github.com/grafana/alerting/apps/historian/pkg/app/config"
@@ -35,6 +37,12 @@ func Historian(cfg *setting.Cfg, deps Deps) (historianAppConfig.RuntimeConfig, e
 	nhCfg := cfg.UnifiedAlerting.NotificationHistory
 	if !nhCfg.Enabled {
 		return runtimeCfg, nil
+	}
+
+	// RBAC is always on, and the app fails every query closed without a client.
+	// Failing here surfaces the missing client at startup instead.
+	if deps.AccessClient == nil {
+		return historianAppConfig.RuntimeConfig{}, errors.New("notification history is enabled, but no access client is available to authorize it")
 	}
 
 	lokiConfig, err := lokiconfig.NewLokiConfig(nhCfg.LokiSettings)

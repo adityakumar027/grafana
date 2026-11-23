@@ -53,12 +53,17 @@ func TestHistorian(t *testing.T) {
 	})
 
 	t.Run("enabled notification history without a Loki URL is an error", func(t *testing.T) {
-		_, err := Historian(enabled(setting.UnifiedAlertingLokiSettings{}), Deps{})
+		_, err := Historian(enabled(setting.UnifiedAlertingLokiSettings{}), Deps{AccessClient: authtypes.FixedAccessClient(true)})
 		require.ErrorContains(t, err, "remote Loki URL")
 	})
 
+	t.Run("enabled notification history without an access client is an error", func(t *testing.T) {
+		_, err := Historian(enabled(setting.UnifiedAlertingLokiSettings{LokiRemoteURL: "http://loki:3100"}), Deps{})
+		require.ErrorContains(t, err, "no access client")
+	})
+
 	t.Run("does not set the state history handler", func(t *testing.T) {
-		got, err := Historian(enabled(setting.UnifiedAlertingLokiSettings{LokiRemoteURL: "http://loki:3100"}), Deps{})
+		got, err := Historian(enabled(setting.UnifiedAlertingLokiSettings{LokiRemoteURL: "http://loki:3100"}), Deps{AccessClient: authtypes.FixedAccessClient(true)})
 		require.NoError(t, err)
 		require.Nil(t, got.GetAlertStateHistoryHandler)
 	})
